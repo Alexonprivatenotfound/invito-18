@@ -2,111 +2,210 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>One Final Move</title>
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css">
-
 <style>
+
 body{
-    background:#111;
-    color:white;
+    margin:0;
+    background:#0d0d0d;
+    color:#fff;
     font-family:Georgia,serif;
     display:flex;
+    flex-direction:column;
     justify-content:center;
     align-items:center;
-    flex-direction:column;
-    height:100vh;
-    margin:0;
+    min-height:100vh;
 }
 
 h1{
     font-weight:300;
-    letter-spacing:2px;
+    letter-spacing:3px;
+    margin-bottom:10px;
 }
 
 p{
-    color:#ccc;
+    color:#b9b9b9;
+    text-align:center;
+    margin:4px;
 }
 
 #board{
-    width:420px;
-    max-width:90vw;
-    margin:25px;
+    display:grid;
+    grid-template-columns:repeat(8,70px);
+    grid-template-rows:repeat(8,70px);
+    border:6px solid #d4af37;
+    margin-top:30px;
+    box-shadow:0 0 35px rgba(212,175,55,.3);
+}
+
+.square{
+    width:70px;
+    height:70px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:46px;
+    user-select:none;
+}
+
+.light{
+    background:#efe6d0;
+}
+
+.dark{
+    background:#6a4c2d;
+}
+
+.selected{
+    outline:5px solid gold;
+}
+
+.correct{
+    background:#3a7d44 !important;
 }
 
 #message{
-    margin-top:20px;
+    margin-top:25px;
+    font-size:22px;
     color:#d4af37;
-    font-size:20px;
+    height:30px;
 }
+
+@media(max-width:650px){
+
+#board{
+grid-template-columns:repeat(8,42px);
+grid-template-rows:repeat(8,42px);
+}
+
+.square{
+width:42px;
+height:42px;
+font-size:28px;
+}
+
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>One Final Move</h1>
+<h1>ONE FINAL MOVE</h1>
 
 <p>White to move.</p>
-<p>Find checkmate in one to unlock your invitation.</p>
+<p>Deliver checkmate in one to reveal your invitation.</p>
 
 <div id="board"></div>
 
 <div id="message"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script>
-
 <script>
 
-const game = new Chess("6k1/4Q3/8/8/8/8/8/4K3 w - - 0 1");
+const board=document.getElementById("board");
 
-const board = Chessboard('board',{
+const pieces={
+"e7":"♕",
+"e1":"♔",
+"g8":"♚"
+};
 
-    draggable:true,
+let selected=null;
 
-    position:'6k1/4Q3/8/8/8/8/8/4K3',
+const files="abcdefgh";
 
-    onDrop:function(source,target){
+function createBoard(){
 
-        const move = game.move({
-            from:source,
-            to:target,
-            promotion:'q'
-        });
+board.innerHTML="";
 
-        if(move===null){
-            return 'snapback';
-        }
+for(let r=8;r>=1;r--){
 
-        board.position(game.fen());
+for(let f=0;f<8;f++){
 
-        if(game.in_checkmate()){
+const sq=document.createElement("div");
 
-            document.getElementById("message").innerHTML =
-            "✔ Checkmate! Unlocking invitation...";
+const coord=files[f]+r;
 
-            setTimeout(function(){
-                window.location.href="invite.html";
-            },1800);
+sq.dataset.square=coord;
 
-        }else{
+sq.className="square "+(((r+f)%2==0)?"light":"dark");
 
-            document.getElementById("message").innerHTML =
-            "Not quite. Try again.";
+sq.textContent=pieces[coord]||"";
 
-            setTimeout(function(){
-                game.undo();
-                board.position(game.fen());
-                document.getElementById("message").innerHTML="";
-            },1000);
-        }
+sq.onclick=()=>clickSquare(coord);
 
-    }
+board.appendChild(sq);
 
-});
+}
+
+}
+
+}
+
+function clearSelection(){
+
+document.querySelectorAll(".square").forEach(s=>s.classList.remove("selected"));
+
+}
+
+function clickSquare(square){
+
+if(selected==null){
+
+if(square==="e7"){
+
+selected=square;
+
+document.querySelector(`[data-square="${square}"]`).classList.add("selected");
+
+}
+
+return;
+
+}
+
+if(square==="e8"){
+
+delete pieces.e7;
+
+pieces.e8="♕";
+
+createBoard();
+
+document.querySelector(`[data-square="e8"]`).classList.add("correct");
+
+document.getElementById("message").textContent="Checkmate.";
+
+setTimeout(()=>{
+
+window.location="invite.html";
+
+},1500);
+
+return;
+
+}
+
+selected=null;
+
+clearSelection();
+
+createBoard();
+
+document.getElementById("message").textContent="Not quite. Try again.";
+
+setTimeout(()=>{
+
+document.getElementById("message").textContent="";
+
+},1200);
+
+}
+
+createBoard();
 
 </script>
 
