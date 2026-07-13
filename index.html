@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>One Final Move</title>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css">
+
+<style>
+body{
+    background:#111;
+    color:white;
+    font-family:Georgia,serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    height:100vh;
+    margin:0;
+}
+
+h1{
+    font-weight:300;
+    letter-spacing:2px;
+}
+
+p{
+    color:#ccc;
+}
+
+#board{
+    width:420px;
+    max-width:90vw;
+    margin:25px;
+}
+
+#message{
+    margin-top:20px;
+    color:#d4af37;
+    font-size:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>One Final Move</h1>
+
+<p>White to move.</p>
+<p>Find checkmate in one to unlock your invitation.</p>
+
+<div id="board"></div>
+
+<div id="message"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script>
+
+<script>
+
+const game = new Chess("6k1/4Q3/8/8/8/8/8/4K3 w - - 0 1");
+
+const board = Chessboard('board',{
+
+    draggable:true,
+
+    position:'6k1/4Q3/8/8/8/8/8/4K3',
+
+    onDrop:function(source,target){
+
+        const move = game.move({
+            from:source,
+            to:target,
+            promotion:'q'
+        });
+
+        if(move===null){
+            return 'snapback';
+        }
+
+        board.position(game.fen());
+
+        if(game.in_checkmate()){
+
+            document.getElementById("message").innerHTML =
+            "✔ Checkmate! Unlocking invitation...";
+
+            setTimeout(function(){
+                window.location.href="invite.html";
+            },1800);
+
+        }else{
+
+            document.getElementById("message").innerHTML =
+            "Not quite. Try again.";
+
+            setTimeout(function(){
+                game.undo();
+                board.position(game.fen());
+                document.getElementById("message").innerHTML="";
+            },1000);
+        }
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
