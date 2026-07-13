@@ -2,210 +2,280 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>One Final Move</title>
 
 <style>
+:root{
+    --gold:#d4af37;
+    --gold-soft:rgba(212,175,55,.35);
+    --dark:#0c0c0c;
+}
+
+*{
+    box-sizing:border-box;
+}
 
 body{
     margin:0;
-    background:#0d0d0d;
-    color:#fff;
-    font-family:Georgia,serif;
+    min-height:100vh;
     display:flex;
-    flex-direction:column;
     justify-content:center;
     align-items:center;
-    min-height:100vh;
+    flex-direction:column;
+    color:white;
+    font-family:Georgia, serif;
+    background:
+        radial-gradient(circle at top, #1f1f1f 0%, #0c0c0c 55%),
+        linear-gradient(135deg,#111,#050505);
+    overflow:hidden;
 }
 
 h1{
+    letter-spacing:4px;
     font-weight:300;
-    letter-spacing:3px;
-    margin-bottom:10px;
+    margin:0;
+    opacity:0;
+    animation:fadeIn 1.5s forwards;
 }
 
-p{
-    color:#b9b9b9;
+.subtitle{
+    margin-top:12px;
+    color:#c9c9c9;
     text-align:center;
-    margin:4px;
+    opacity:0;
+    animation:fadeIn 1.5s .4s forwards;
+}
+
+.board-wrap{
+    margin-top:35px;
+    padding:14px;
+    border:2px solid var(--gold);
+    box-shadow:
+        0 0 25px var(--gold-soft),
+        inset 0 0 20px rgba(255,255,255,.03);
 }
 
 #board{
     display:grid;
-    grid-template-columns:repeat(8,70px);
-    grid-template-rows:repeat(8,70px);
-    border:6px solid #d4af37;
-    margin-top:30px;
-    box-shadow:0 0 35px rgba(212,175,55,.3);
+    grid-template-columns:repeat(8,72px);
+    grid-template-rows:repeat(8,72px);
 }
 
 .square{
-    width:70px;
-    height:70px;
+    position:relative;
     display:flex;
     justify-content:center;
     align-items:center;
-    font-size:46px;
+    font-size:48px;
     user-select:none;
 }
 
-.light{
-    background:#efe6d0;
-}
+.light{ background:#e8dcc4; }
+.dark{ background:#6b4d2f; }
 
-.dark{
-    background:#6a4c2d;
+.piece{
+    cursor:pointer;
+    transition:transform .25s;
+    z-index:2;
 }
 
 .selected{
-    outline:5px solid gold;
+    box-shadow:inset 0 0 0 4px gold;
 }
 
-.correct{
-    background:#3a7d44 !important;
+.move-dot::after{
+    content:"";
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:rgba(212,175,55,.75);
+    position:absolute;
 }
 
 #message{
-    margin-top:25px;
-    font-size:22px;
-    color:#d4af37;
-    height:30px;
+    height:32px;
+    margin-top:20px;
+    color:var(--gold);
+    font-size:20px;
 }
 
-@media(max-width:650px){
-
-#board{
-grid-template-columns:repeat(8,42px);
-grid-template-rows:repeat(8,42px);
+.fade{
+    position:fixed;
+    inset:0;
+    background:black;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 1.5s;
 }
 
-.square{
-width:42px;
-height:42px;
-font-size:28px;
+.fade.show{
+    opacity:1;
 }
 
+@keyframes fadeIn{
+    from{
+        opacity:0;
+        transform:translateY(10px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
 }
 
+@media (max-width:700px){
+
+    #board{
+        grid-template-columns:repeat(8,44px);
+        grid-template-rows:repeat(8,44px);
+    }
+
+    .square{
+        font-size:30px;
+    }
+}
 </style>
 </head>
-
 <body>
 
 <h1>ONE FINAL MOVE</h1>
 
-<p>White to move.</p>
-<p>Deliver checkmate in one to reveal your invitation.</p>
+<div class="subtitle">
+    White to move.<br>
+    Deliver checkmate in one to reveal your invitation.
+</div>
 
-<div id="board"></div>
+<div class="board-wrap">
+    <div id="board"></div>
+</div>
 
 <div id="message"></div>
 
+<div class="fade" id="fade"></div>
+
 <script>
 
-const board=document.getElementById("board");
+const board = document.getElementById("board");
+const message = document.getElementById("message");
 
-const pieces={
-"e7":"♕",
-"e1":"♔",
-"g8":"♚"
+const files = "abcdefgh";
+
+let queenSelected = false;
+
+const pieces = {
+    "a7":"♕",
+    "g6":"♔",
+    "g8":"♚"
 };
 
-let selected=null;
-
-const files="abcdefgh";
-
-function createBoard(){
-
-board.innerHTML="";
-
-for(let r=8;r>=1;r--){
-
-for(let f=0;f<8;f++){
-
-const sq=document.createElement("div");
-
-const coord=files[f]+r;
-
-sq.dataset.square=coord;
-
-sq.className="square "+(((r+f)%2==0)?"light":"dark");
-
-sq.textContent=pieces[coord]||"";
-
-sq.onclick=()=>clickSquare(coord);
-
-board.appendChild(sq);
-
+function squareColor(file,row){
+    return ((file + row) % 2 === 0) ? "light" : "dark";
 }
 
+function renderBoard(){
+
+    board.innerHTML = "";
+
+    for(let rank = 8; rank >= 1; rank--){
+
+        for(let file = 0; file < 8; file++){
+
+            const coord = files[file] + rank;
+
+            const sq = document.createElement("div");
+            sq.className = `square ${squareColor(file,rank)}`;
+            sq.dataset.square = coord;
+
+            if(pieces[coord]){
+                const piece = document.createElement("div");
+                piece.className = "piece";
+                piece.textContent = pieces[coord];
+                sq.appendChild(piece);
+            }
+
+            sq.addEventListener("click",() => handleClick(coord));
+
+            board.appendChild(sq);
+        }
+    }
 }
 
+function clearHighlights(){
+
+    document.querySelectorAll(".square").forEach(s=>{
+        s.classList.remove("selected");
+        s.classList.remove("move-dot");
+    });
 }
 
-function clearSelection(){
+function highlightQueenMoves(){
 
-document.querySelectorAll(".square").forEach(s=>s.classList.remove("selected"));
+    const queenSquare = document.querySelector('[data-square="a7"]');
 
+    if(queenSquare){
+        queenSquare.classList.add("selected");
+    }
+
+    const legalMoves = [
+        "a8","a6","a5","a4","a3","a2","a1",
+        "b7","c7","d7","e7","f7","g7","h7",
+        "b8","b6","c5","d4","e3","f2","g1"
+    ];
+
+    legalMoves.forEach(move => {
+        const sq = document.querySelector(`[data-square="${move}"]`);
+        if(sq) sq.classList.add("move-dot");
+    });
 }
 
-function clickSquare(square){
+function handleClick(square){
 
-if(selected==null){
+    if(!queenSelected){
 
-if(square==="e7"){
+        if(square === "a7"){
+            queenSelected = true;
+            highlightQueenMoves();
+        }
 
-selected=square;
+        return;
+    }
 
-document.querySelector(`[data-square="${square}"]`).classList.add("selected");
+    clearHighlights();
 
+    if(square === "g7"){
+
+        delete pieces["a7"];
+        pieces["g7"] = "♕";
+
+        renderBoard();
+
+        message.textContent = "Checkmate.";
+
+        document.querySelector(".board-wrap").style.boxShadow =
+            "0 0 50px rgba(212,175,55,.9)";
+
+        setTimeout(()=>{
+            document.getElementById("fade").classList.add("show");
+        },800);
+
+        setTimeout(()=>{
+            window.location.href = "invite.html";
+        },2400);
+
+        return;
+    }
+
+    queenSelected = false;
+
+    message.textContent = "Not quite. The game continues.";
+
+    setTimeout(()=>{
+        message.textContent = "";
+    },1500);
 }
 
-return;
-
-}
-
-if(square==="e8"){
-
-delete pieces.e7;
-
-pieces.e8="♕";
-
-createBoard();
-
-document.querySelector(`[data-square="e8"]`).classList.add("correct");
-
-document.getElementById("message").textContent="Checkmate.";
-
-setTimeout(()=>{
-
-window.location="invite.html";
-
-},1500);
-
-return;
-
-}
-
-selected=null;
-
-clearSelection();
-
-createBoard();
-
-document.getElementById("message").textContent="Not quite. Try again.";
-
-setTimeout(()=>{
-
-document.getElementById("message").textContent="";
-
-},1200);
-
-}
-
-createBoard();
+renderBoard();
 
 </script>
 
